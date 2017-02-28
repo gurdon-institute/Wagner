@@ -2,11 +2,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import javax.swing.JOptionPane;
+import java.util.Arrays;
 
 //java -Xmx4000m -jar Wagner_.jar -D:\Lewis\small_opera_test\ 4
-public class Wagner_{
+public class Wagner{
 private static final String USAGE = "Wagner - constructs stacks from TIFFs with names matching r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff\n"
 		 							+"usage: Wagner directory_path(string, required) thread_count(int, optional)";
 
@@ -63,7 +62,7 @@ private static final String USAGE = "Wagner - constructs stacks from TIFFs with 
 				}
 			}
 			charles.execute();
-		}catch(Exception e){ JOptionPane.showMessageDialog(null, e.toString(), "Error", JOptionPane.ERROR_MESSAGE); }
+		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 
 }

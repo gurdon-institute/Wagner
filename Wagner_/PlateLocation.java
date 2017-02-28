@@ -17,12 +17,9 @@ class PlateLocation implements Runnable{
 	
 	public PlateLocation(String path, String loc){
 		this.path = path;
-		int rowi = loc.indexOf("r")+1;
-		int columni = loc.indexOf("c")+1;
-		int fieldi = loc.indexOf("f")+1;
-		this.row = Integer.valueOf(loc.substring(rowi, rowi+2));
-		this.column = Integer.valueOf(loc.substring(columni, columni+2));
-		this.field = Integer.valueOf(loc.substring(fieldi, fieldi+2));
+		this.row = OperaParser.getValue(OperaParser.Dimension.ROW, loc);
+		this.column = OperaParser.getValue(OperaParser.Dimension.COLUMN, loc);
+		this.field = OperaParser.getValue(OperaParser.Dimension.FIELD, loc);
 		files = new ArrayList<String>();
 	}
 	
@@ -33,12 +30,9 @@ class PlateLocation implements Runnable{
 	}
 
 	public boolean matches(String loc){
-		int rowi = loc.indexOf("r")+1;
-		int columni = loc.indexOf("c")+1;
-		int fieldi = loc.indexOf("f")+1;
-		int locRow = Integer.valueOf(loc.substring(rowi, rowi+2));
-		int locColumn = Integer.valueOf(loc.substring(columni, columni+2));
-		int locField = Integer.valueOf(loc.substring(fieldi, fieldi+2));
+		int locRow = OperaParser.getValue(OperaParser.Dimension.ROW, loc);
+		int locColumn = OperaParser.getValue(OperaParser.Dimension.COLUMN, loc);
+		int locField = OperaParser.getValue(OperaParser.Dimension.FIELD, loc);
 		if(locRow==row&&locColumn==column&&locField==field){
 			return true;
 		}
@@ -53,7 +47,6 @@ class PlateLocation implements Runnable{
 	
 	@Override
 	public void run() {
-		
 		System.out.println( "building location "+toString() );
 		File saveDir = new File(path+foo+"stacks");
 		if(!saveDir.isDirectory()){
@@ -65,17 +58,10 @@ class PlateLocation implements Runnable{
 			return;
 		}
 		for(String file : files){
-			
-			int channeli = file.indexOf("ch")+2;
-			int slicei = file.indexOf("p")+1;
-			int framei = file.indexOf("sk")+2;
-			int frameiEnd = file.indexOf("fk");
-			int channel = (channeli==1) ? 0 : Integer.valueOf(file.substring(channeli, channeli+1));
-			int slice = (slicei==0) ? 0 : Integer.valueOf(file.substring(slicei, slicei+2));
-			int frame = (framei==1) ? 0 : Integer.valueOf(file.substring(framei, frameiEnd));
-			
+			int channel = OperaParser.getValue(OperaParser.Dimension.CHANNEL, file);
+			int slice = OperaParser.getValue(OperaParser.Dimension.SLICE, file);
+			int frame = OperaParser.getValue(OperaParser.Dimension.FRAME, file);
 			ImagePlus image = IJ.openImage( path+foo+file );
-
 			if(stack==null){
 				stack = new ImageStack(image.getWidth(), image.getHeight());
 			}
