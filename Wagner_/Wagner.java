@@ -5,11 +5,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 
 //java -Xmx4000m -jar Wagner_.jar -D:\Lewis\small_opera_test\ 4
-public class Wagner{
-private static final String USAGE = "Wagner - constructs stacks from TIFFs with names matching r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff\n"
-		 							+"usage: Wagner directory_path(string, required) thread_count(int, optional)";
+//cluster - use 60 Gb, 24 cores
 
-	/*	
+/*	
 * 	opera exported TIFF filenames
 *	r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff
 *	r - row
@@ -21,7 +19,11 @@ private static final String USAGE = "Wagner - constructs stacks from TIFFs with 
 *	fk - ???
 *	fl - ???
 */
-	
+
+public class Wagner{
+private static final String USAGE = "Wagner - constructs stacks from TIFFs with names matching r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff\n"
+		 							+"usage: Wagner directory_path(string, required) thread_count(int, optional)";
+
 	public static void main(String[] args){
 		try{	
 			if(args==null||args.length==0){
@@ -44,15 +46,8 @@ private static final String USAGE = "Wagner - constructs stacks from TIFFs with 
 				System.out.print(USAGE);
 				return;
 			}
-			long available = Runtime.getRuntime().maxMemory();
-			long req = 1024*1024*500;	//require 500Mb per thread //TODO: predict requirement for each location somehow?
-			//System.out.println( available+" / "+req );
-			if( (available/nThreads)<req ){
-				System.out.print( (available/1024/1024)+" Mb is not enough memory for "+nThreads+" threads\n"+
-								  " - set higher with the java -Xmx*m arg or use fewer threads" );
-				return;
-			}
-			Charles charles = new Charles(path, nThreads);
+
+			LocationManager charles = new LocationManager(path, nThreads);
 			
 			final DirectoryStream<Path> dirstream = Files.newDirectoryStream(Paths.get(path));
 			for (final Path entry: dirstream){

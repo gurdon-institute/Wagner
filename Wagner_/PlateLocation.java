@@ -1,34 +1,51 @@
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 
 class PlateLocation implements Runnable{
-	int row, column, field;
-	String path;
-	List<String> files;
+	private int row, column, field;
+	private String path;
+	private List<OperaTiff> images;
+	private long memory;
 	private static final String foo = System.getProperty("file.separator");
 	
-	
-	public PlateLocation(){	}
 	
 	public PlateLocation(String path, String loc){
 		this.path = path;
 		this.row = OperaParser.getValue(OperaParser.Dimension.ROW, loc);
 		this.column = OperaParser.getValue(OperaParser.Dimension.COLUMN, loc);
 		this.field = OperaParser.getValue(OperaParser.Dimension.FIELD, loc);
-		files = new ArrayList<String>();
+		this.images = new ArrayList<OperaTiff>();
+		this.memory = 0L;
 	}
 	
-	public void addFile(String file) {
-		if(files.indexOf(file)==-1){
-			files.add(file);
+	public void addImage(String filename){
+		if(images.indexOf(filename)==-1){	//if the image isn't already in the list
+			images.add( new OperaTiff(filename) );
+			File tempFile = new File( path+foo+filename );
+			memory += tempFile.length();
+			tempFile = null;
 		}
 	}
 
+	public boolean matches(PlateLocation other){
+		if(other.row==row&&other.column==column&&other.field==field){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
 	public boolean matches(String loc){
 		int locRow = OperaParser.getValue(OperaParser.Dimension.ROW, loc);
 		int locColumn = OperaParser.getValue(OperaParser.Dimension.COLUMN, loc);
@@ -41,43 +58,101 @@ class PlateLocation implements Runnable{
 		}
 	}
 	
+	public long getSize(){	//returns the sum of lengths in bytes of all files for this location
+		return memory;
+	}
+	
 	public String toString(){
 		return "row-"+row+" column-"+column+" field-"+field;
 	}
 	
+	public void flush(){
+		path = null;
+		images = null;
+	}
+	
 	@Override
 	public void run() {
-		System.out.println( "building location "+toString() );
+		try{
 		File saveDir = new File(path+foo+"stacks");
 		if(!saveDir.isDirectory()){
 			saveDir.mkdir();
 		}
 		ImageStack stack = null;
-		if(files.size()==0){
-			System.out.println("No files for "+toString());
+		if(images==null||images.size()==0){
+			System.out.println("No images for "+toString());
 			return;
 		}
-		for(String file : files){
-			int channel = OperaParser.getValue(OperaParser.Dimension.CHANNEL, file);
-			int slice = OperaParser.getValue(OperaParser.Dimension.SLICE, file);
-			int frame = OperaParser.getValue(OperaParser.Dimension.FRAME, file);
-			ImagePlus image = IJ.openImage( path+foo+file );
-			if(stack==null){
-				stack = new ImageStack(image.getWidth(), image.getHeight());
+		System.out.println( "building location "+toString() );
+		
+		Collections.sort( images, new Comparator<OperaTiff>(){	//put in CZT (ImageJ default) order
+			@Override
+			public int compare(OperaTiff a, OperaTiff b) {
+				if(a.frame!=b.frame){return a.frame-b.frame;}
+				if(a.slice!=b.slice){return a.slice-b.slice;}
+				if(a.channel!=b.channel){return a.channel-b.channel;}
+				return 0;
 			}
-			stack.addSlice( "c"+channel+" z"+slice+" t"+frame, image.getProcessor() );
-			image.flush();
-			image.close();
+		} );
+		
+		Set<Integer> Cset = new HashSet<Integer>();	//get unique dimension indices in Sets
+		Set<Integer> Zset = new HashSet<Integer>();
+		Set<Integer> Tset = new HashSet<Integer>();
+		for(OperaTiff image : images){
+			Cset.add(image.channel);
+			Zset.add(image.slice);
+			Tset.add(image.frame);
+			ImagePlus imp = null;
+			try{
+				imp = IJ.openImage( path+foo+image.name );
+			}catch(Exception pokemon){ System.out.println(pokemon.toString()+" in "+path+foo+image.name); }
+			if(stack==null){
+				stack = new ImageStack(imp.getWidth(), imp.getHeight());
+			}
+			stack.addSlice( "c"+image.channel+" z"+image.slice+" t"+image.frame, imp.getProcessor() );
+			imp.flush();
+			imp.close();
 		}
 		if(stack.getSize()==0){
 			System.out.println("No stack for "+toString());
 			return;
 		}
-		//TODO: arrange into hyperstack
-		System.out.println("Got stack for "+toString());
-		ImagePlus imp = new ImagePlus( toString(), stack );
-		IJ.saveAs(imp, "TIFF", path+foo+"stacks"+foo+toString()+".tiff");
-		imp.close();
+		System.out.println("Got data for "+toString());
+		
+		ImagePlus imageStack = new ImagePlus( toString(), stack );
+		
+		//////////////////////////
+		int n = imageStack.getStackSize();
+		int C = Cset.size();
+		int Z = Zset.size();
+		int T = Tset.size();
+        //if (n==1 || imp.getBitDepth()==24){
+        //    throw new IllegalArgumentException("Non-RGB stack required");
+        //}
+        if ( C*Z*T < n ){
+            throw new IllegalStateException("C*Z*T is less than the stack size - extra images may have been added");
+        }
+        else if ( C*Z*T > n ){
+            throw new IllegalStateException("C*Z*T is greater than the stack size - images may be missing");
+        }
+        assert C*Z*T == n;
+        imageStack.setDimensions(C, Z, T);
+      
+        //new HyperStackConverter().shuffle(imp, 5);	//CZT=0, CTZ=1, ZCT=2, ZTC=3, TCZ=4, TZC=5 (private fields for some reason)
+        if (C>1) {
+            imageStack = new CompositeImage(imageStack, CompositeImage.GRAYSCALE);
+        }
+        imageStack.setOpenAsHyperStack(true);
+		//////////////////////////
+		
+		IJ.saveAs(imageStack, "TIFF", path+foo+"stacks"+foo+toString()+".tiff");
+		imageStack.close();
+		
+		System.out.println(toString()+" done");
+		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
+		finally{
+			flush();
+		}
 	}
 	
 }
