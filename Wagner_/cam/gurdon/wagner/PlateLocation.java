@@ -1,3 +1,4 @@
+package cam.gurdon.wagner;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +15,7 @@ import ij.ImageStack;
 
 class PlateLocation implements Runnable{
 	private int row, column, field;
-	private String path;
+	private String path, locationString;
 	private List<OperaTiff> images;
 	private long memory;
 	private static final String foo = System.getProperty("file.separator");
@@ -63,7 +64,10 @@ class PlateLocation implements Runnable{
 	}
 	
 	public String toString(){
-		return "row-"+row+" column-"+column+" field-"+field;
+		if(locationString==null){
+			locationString = "row-"+row+" column-"+column+" field-"+field;
+		}
+		return locationString;
 	}
 	
 	public void flush(){
@@ -78,9 +82,9 @@ class PlateLocation implements Runnable{
 		if(!saveDir.isDirectory()){
 			saveDir.mkdir();
 		}
-		ImageStack stack = null;
+		
 		if(images==null||images.size()==0){
-			System.out.println("No images for "+toString());
+			System.out.println( "No images for "+toString() );
 			return;
 		}
 		System.out.println( "building location "+toString() );
@@ -98,14 +102,13 @@ class PlateLocation implements Runnable{
 		Set<Integer> Cset = new HashSet<Integer>();	//get unique dimension indices in Sets
 		Set<Integer> Zset = new HashSet<Integer>();
 		Set<Integer> Tset = new HashSet<Integer>();
+		ImageStack stack = null;
 		for(OperaTiff image : images){
 			Cset.add(image.channel);
 			Zset.add(image.slice);
 			Tset.add(image.frame);
 			ImagePlus imp = null;
-			try{
-				imp = IJ.openImage( path+foo+image.name );
-			}catch(Exception pokemon){ System.out.println(pokemon.toString()+" in "+path+foo+image.name); }
+			imp = IJ.openImage( path+foo+image.name );
 			if(stack==null){
 				stack = new ImageStack(imp.getWidth(), imp.getHeight());
 			}
@@ -121,35 +124,30 @@ class PlateLocation implements Runnable{
 		
 		ImagePlus imageStack = new ImagePlus( toString(), stack );
 		
-		//////////////////////////
 		int n = imageStack.getStackSize();
 		int C = Cset.size();
 		int Z = Zset.size();
 		int T = Tset.size();
-        //if (n==1 || imp.getBitDepth()==24){
-        //    throw new IllegalArgumentException("Non-RGB stack required");
-        //}
+		
         if ( C*Z*T < n ){
-            throw new IllegalStateException("C*Z*T is less than the stack size - extra images may have been added");
+            System.out.println("C*Z*T is less than the stack size for "+toString()+" - extra images may have been added");
+            return;
         }
         else if ( C*Z*T > n ){
-            throw new IllegalStateException("C*Z*T is greater than the stack size - images may be missing");
+        	System.out.println("C*Z*T is greater than the stack size for "+toString()+" - images may be missing");
+        	return;
         }
-        assert C*Z*T == n;
         imageStack.setDimensions(C, Z, T);
-      
-        //new HyperStackConverter().shuffle(imp, 5);	//CZT=0, CTZ=1, ZCT=2, ZTC=3, TCZ=4, TZC=5 (private fields for some reason)
         if (C>1) {
             imageStack = new CompositeImage(imageStack, CompositeImage.GRAYSCALE);
         }
         imageStack.setOpenAsHyperStack(true);
-		//////////////////////////
 		
 		IJ.saveAs(imageStack, "TIFF", path+foo+"stacks"+foo+toString()+".tiff");
 		imageStack.close();
 		
 		System.out.println(toString()+" done");
-		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
+		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n")+"\n");}
 		finally{
 			flush();
 		}

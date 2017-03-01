@@ -1,3 +1,4 @@
+package cam.gurdon.wagner;
 
 public class OperaParser {
 

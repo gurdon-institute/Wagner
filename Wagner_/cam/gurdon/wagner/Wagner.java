@@ -1,3 +1,4 @@
+package cam.gurdon.wagner;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,16 +48,16 @@ private static final String USAGE = "Wagner - constructs stacks from TIFFs with 
 				return;
 			}
 
-			LocationManager charles = new LocationManager(path, nThreads);
+			LocationManager manager = new LocationManager(path, nThreads);
 			
 			final DirectoryStream<Path> dirstream = Files.newDirectoryStream(Paths.get(path));
 			for (final Path entry: dirstream){
 				String name = entry.getFileName().toString();
 				if(name.matches( "r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff" )){
-					charles.add( name );
+					manager.add( name );
 				}
 			}
-			charles.execute();
+			manager.execute();
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 

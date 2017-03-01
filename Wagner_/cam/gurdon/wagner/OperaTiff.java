@@ -1,3 +1,4 @@
+package cam.gurdon.wagner;
 
 public class OperaTiff {
 public int row, column, field, channel, slice, frame;
