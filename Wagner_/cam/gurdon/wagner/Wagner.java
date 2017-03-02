@@ -5,8 +5,26 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-//java -Xmx4000m -jar Wagner_.jar -D:\Lewis\small_opera_test\ 4
-//cluster - use 60 Gb, 24 cores
+
+/*	submitWagner.sh
+#!/bin/bash
+#SBATCH --job-name=Wagner
+#SBATCH --partition=1604
+#SBATCH --distribution=cyclic:block
+#SBATCH --ntasks=12
+#SBATCH --mail-type=END
+#SBATCH --mail-user=rsb48@cam.ac.uk
+
+echo -e "JobID: $SLURM_JOB_ID\n====="
+echo "Time: `date`"
+echo "Running on master node: `hostname`"
+echo "Current directory: `pwd`"
+echo -e "\nExecuting command: $WAGNER_CMD\n====="
+
+eval $WAGNER_CMD
+*/
+//export WAGNER_CMD="java -Xmx30000m -jar Wagner_.jar -/mnt/DATA/home1/imaging/rsb48/data/ 12"
+//sbatch ./submitWagner.sh
 
 /*	
 * 	opera exported TIFF filenames
@@ -35,7 +53,7 @@ private static final String USAGE = "Wagner - constructs stacks from TIFFs with 
 			int nThreads = 1;
 			if(args.length>1){
 				try{
-				nThreads = Integer.valueOf( args[1] );
+					nThreads = Integer.valueOf( args[1] );
 				}catch(NumberFormatException nfe){
 					System.out.println(args[1]+" is not an integer");
 					System.out.print(USAGE);
