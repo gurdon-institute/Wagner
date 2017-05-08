@@ -2,6 +2,7 @@ package cam.gurdon.wagner;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,17 +15,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.prefs.Preferences;
 
-import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -79,12 +76,14 @@ private static final String USAGE = "Wagner - by Richard Butler, Gurdon Institut
 private JFrame gui;
 private JLabel pathLabel;
 private JSpinner threadSpin;
+private static final Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+private static final Font FONT = new Font(Font.SANS_SERIF, Font.PLAIN, screen.height/100);
 private static final String prefPath = System.getProperty("user.home")+File.separator+"Wagner.cfg";
 private String path = System.getProperty("user.home");
 private int threads = 2;
 //~~~~~~~~~~
 
-	public static void main(String[] args){
+	public static void main(String[] args){ System.out.println();
 		try{
 			String path = "";
 			int nThreads = 0;
@@ -124,11 +123,13 @@ private int threads = 2;
 			text = new JTextArea(){
 				private static final long serialVersionUID = 8332767163052368928L;
 				public Dimension getPreferredSize(){
-					return new Dimension(700,400);
+					return new Dimension(screen.width/3, screen.height/4);
 				}
 			};
+			text.setFont(FONT);
 			text.setEditable(false);
-			text.setText(USAGE);
+			text.setText(USAGE+"\n\n");
+					//+String.format("%.1f",Runtime.getRuntime().freeMemory()/1000000d)+" MB free JVM memory - increase using the -Xmx argument\n");
 			sb = new StringBuilder();
 		}
 		
@@ -232,23 +233,30 @@ private int threads = 2;
 		
 		JPanel controlPan = new JPanel();
 		pathLabel = new JLabel(path);
+		pathLabel.setFont(FONT);
 		controlPan.add(pathLabel);
 		JButton pathButton = new JButton("Path...");
+		pathButton.setFont(FONT);
 		pathButton.addActionListener(listen);
 		controlPan.add(pathButton);
 		controlPan.add(Box.createHorizontalStrut(20));
-		controlPan.add(new JLabel("Threads:"));
+		JLabel threadLabel = new JLabel("Threads:");
+		threadLabel.setFont(FONT);
+		controlPan.add(threadLabel);
 		SpinnerModel model = new SpinnerNumberModel(threads, 1, 32, 1);
 		threadSpin = new JSpinner(model);
+		threadSpin.setFont(FONT);
 		controlPan.add(threadSpin);
 		gui.add(controlPan);
 		
 		JPanel buttonPan = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 2));
 		JButton run = new JButton("Run");
+		run.setFont(FONT);
 		run.addActionListener(listen);
 		buttonPan.add(run);
 		JButton cancel = new JButton("Cancel");
 		cancel.addActionListener(listen);
+		cancel.setFont(FONT);
 		buttonPan.add(cancel);
 		gui.add(buttonPan);
 		
