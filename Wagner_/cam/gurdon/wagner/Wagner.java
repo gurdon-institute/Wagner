@@ -23,8 +23,9 @@ echo -e "\nExecuting command: $WAGNER_CMD\n====="
 
 eval $WAGNER_CMD
 */
-//export WAGNER_CMD="java -Xmx30000m -jar Wagner_.jar -/mnt/DATA/home1/imaging/rsb48/data/ 12"
+//export WAGNER_CMD="java -Xmx30000m -jar Wagner.jar -/mnt/DATA/home1/imaging/rsb48/data/ 12"
 //sbatch ./submitWagner.sh
+//cat slurm-jobno.out
 
 /*	
 * 	opera exported TIFF filenames
