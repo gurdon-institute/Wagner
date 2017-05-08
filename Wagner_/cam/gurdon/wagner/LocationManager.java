@@ -1,5 +1,10 @@
 package cam.gurdon.wagner;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,21 +17,37 @@ private String path;
 private int nThreads;
 	
 	public LocationManager(String path, int n) {
-		this.path = path;
-		this.nThreads = n;
-		locations = new ArrayList<PlateLocation>();
+		try{
+			this.path = path;
+			this.nThreads = n;
+			locations = new ArrayList<PlateLocation>();
+			final DirectoryStream<Path> dirstream = Files.newDirectoryStream(Paths.get(path));
+			int count = 0;
+			for (final Path entry: dirstream){
+				String name = entry.getFileName().toString();
+				if(name.matches( "r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff" )){
+					add( name );
+					count++;
+				}
+			}
+			dirstream.close();
+			System.out.println("Constructing images for "+path);
+			System.out.println(count+" files, "+locations.size()+" plate locations using "+nThreads+" threads.");
+		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 	
 	public void add(String name){
-		PlateLocation loc = getLocation( name );
-		if( loc == null ){
-			loc = new PlateLocation(path, name);
-			loc.addImage( name );
-			locations.add( loc );
-		}
-		else{
-			loc.addImage( name );
-		}
+		try{
+			PlateLocation loc = getLocation( name );
+			if( loc == null ){
+				loc = new PlateLocation(path, name);
+				loc.addImage( name );
+				locations.add( loc );
+			}
+			else{
+				loc.addImage( name );
+			}
+		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 	
 	public PlateLocation getLocation( String str ){
@@ -63,7 +84,7 @@ private int nThreads;
 		executor.shutdown();
 		try {
 			executor.awaitTermination(7L, TimeUnit.DAYS);
-			System.out.println( "Wagner finished "+locations.size()+" locations in "+path );
+			System.out.println( "\nWagner finished "+locations.size()+" locations in "+path+"\n" );
 		} catch (InterruptedException ie) {
 			System.out.println(ie.toString());
 		}
