@@ -7,14 +7,12 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -33,14 +31,14 @@ import javax.swing.SwingWorker;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 
-/*	submitWagner.sh
+/*	bash script to submit slurm jobs (submitWagner.sh)
 #!/bin/bash
 #SBATCH --job-name=Wagner
 #SBATCH --partition=1604
 #SBATCH --distribution=cyclic:block
 #SBATCH --ntasks=12
 #SBATCH --mail-type=END
-#SBATCH --mail-user=rsb48@cam.ac.uk
+#SBATCH --mail-user=
 
 echo -e "JobID: $SLURM_JOB_ID\n====="
 echo "Time: `date`"
@@ -49,10 +47,13 @@ echo "Current directory: `pwd`"
 echo -e "\nExecuting command: $WAGNER_CMD\n====="
 
 eval $WAGNER_CMD
+*/	
+
+/*	bash commands for script setup
+export WAGNER_CMD="java -Xmx30000m -jar Wagner.jar -/mnt/DATA/home1/imaging/rsb48/data/ 12"
+sbatch ./submitWagner.sh
+cat slurm-jobno.out
 */
-//export WAGNER_CMD="java -Xmx30000m -jar Wagner.jar -/mnt/DATA/home1/imaging/rsb48/data/ 12"
-//sbatch ./submitWagner.sh
-//cat slurm-jobno.out
 
 /*	
 * 	opera exported TIFF filenames
@@ -70,8 +71,8 @@ eval $WAGNER_CMD
 public class Wagner{
 private static final String USAGE = "Wagner - by Richard Butler, Gurdon Institute Imaging Facility\n"
 									+"constructs stacks from TIFFs with names matching r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff\n"
-		 							+"usage: Wagner directory_path(string, required for headless mode) thread_count(int, optional)\n"
-		 							+"run with no arguments for GUI mode.";
+		 							+"command line usage: Wagner directory_path(string, required) thread_count(int, optional)\n";
+
 //~~~~~GUI mode things~~~~~
 private JFrame gui;
 private JLabel pathLabel;
@@ -83,7 +84,7 @@ private String path = System.getProperty("user.home");
 private int threads = 2;
 //~~~~~~~~~~
 
-	public static void main(String[] args){ System.out.println();
+	public static void main(String[] args){
 		try{
 			String path = "";
 			int nThreads = 0;
@@ -169,9 +170,20 @@ private int threads = 2;
 		try{
 			File cfg = new File(prefPath);
 			if(cfg.exists()){
-				List<String> lines = Files.readAllLines(Paths.get(prefPath));
-				path = lines.get(0);
-				threads = Integer.valueOf(lines.get(1));
+				//List<String> lines = Files.readAllLines(Paths.get(prefPath));	//java 8 required, not supported on iProducts
+				//path = lines.get(0);
+				//threads = Integer.valueOf(lines.get(1));
+				FileInputStream fis = new FileInputStream(cfg);
+				StringBuilder sb = new StringBuilder();
+				int i;
+				while((i = fis.read()) != -1){
+					sb.append((char)i);
+				}
+				String config = sb.toString();
+				String[] lines = config.split("\\s*\\r?\\n\\s*"); //split on newlines and trim extra white space
+				path = lines[0];
+				threads = Integer.valueOf(lines[1]);
+				fis.close();
 			}
 			else{
 				savePrefs();	//save defaults
