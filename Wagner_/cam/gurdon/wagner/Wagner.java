@@ -121,14 +121,10 @@ private int threads = 2;
 		private StringBuilder sb;
 		
 		public Log(){
-			text = new JTextArea(){
-				private static final long serialVersionUID = 8332767163052368928L;
-				public Dimension getPreferredSize(){
-					return new Dimension(screen.width/3, screen.height/4);
-				}
-			};
+			text = new JTextArea();
 			text.setFont(FONT);
 			text.setEditable(false);
+			text.setLineWrap(true);
 			text.setText(USAGE+"\n\n");
 					//+String.format("%.1f",Runtime.getRuntime().freeMemory()/1000000d)+" MB free JVM memory - increase using the -Xmx argument\n");
 			sb = new StringBuilder();
@@ -241,7 +237,15 @@ private int threads = 2;
 		gui.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("logo_icon.gif")));
 		gui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		gui.add(new JScrollPane(log.getTextArea()));
+		JScrollPane scrollPane = new JScrollPane(log.getTextArea()){
+			private static final long serialVersionUID = 2410141039613207390L;
+			public Dimension getPreferredSize(){
+				return new Dimension(screen.width/3, screen.height/4);
+			}
+		};
+		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		gui.add(scrollPane);
 		
 		JPanel controlPan = new JPanel();
 		pathLabel = new JLabel(path);
@@ -275,6 +279,7 @@ private int threads = 2;
 		gui.pack();
 		gui.setLocationRelativeTo(null);
 		gui.setVisible(true);
+		
 	}
 	
 }
