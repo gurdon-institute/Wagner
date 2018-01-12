@@ -13,7 +13,10 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import javax.swing.BoundedRangeModel;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -21,6 +24,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
@@ -75,6 +79,7 @@ private static final String USAGE = "Wagner - by Richard Butler, Gurdon Institut
 
 //~~~~~GUI mode things~~~~~
 private JFrame gui;
+private JScrollPane scrollPane;
 private JLabel pathLabel;
 private JSpinner threadSpin;
 private static final Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -142,6 +147,8 @@ private int threads = 2;
 	                @Override
 	                public void run() {
 	                    text.append(str);
+	                    JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+	            		scrollBar.setValue( scrollBar.getMaximum() );
 	                }
 	            });
 	            sb.setLength(0);
@@ -237,7 +244,7 @@ private int threads = 2;
 		gui.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("logo_icon.gif")));
 		gui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		JScrollPane scrollPane = new JScrollPane(log.getTextArea()){
+		scrollPane = new JScrollPane(log.getTextArea()){
 			private static final long serialVersionUID = 2410141039613207390L;
 			public Dimension getPreferredSize(){
 				return new Dimension(screen.width/3, screen.height/4);
@@ -280,6 +287,16 @@ private int threads = 2;
 		gui.setLocationRelativeTo(null);
 		gui.setVisible(true);
 		
+		final Timer timer = new Timer();
+		TimerTask task = new TimerTask(){
+			int n = 0;
+			public void run(){
+				System.out.println("text");
+				n++;
+				if(n>50) timer.cancel();
+			}
+		};
+		timer.scheduleAtFixedRate(task, 100L, 100L);
 	}
 	
 }
