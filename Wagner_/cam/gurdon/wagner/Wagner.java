@@ -6,6 +6,8 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,10 +15,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.Timer;
-import java.util.TimerTask;
 
-import javax.swing.BoundedRangeModel;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -91,6 +90,12 @@ private int threads = 2;
 
 	public static void main(String[] args){
 		try{
+			
+			/*if(true){
+				final Arranger arranger = new Arranger(12, new Stitcher());
+				return;
+			}*/
+			
 			String path = "";
 			int nThreads = 0;
 			if(args.length == 0){
@@ -254,7 +259,11 @@ private int threads = 2;
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		gui.add(scrollPane);
 		
-		JPanel controlPan = new JPanel();
+		JPanel controlPan = new JPanel(){
+			public Dimension getMaximumSize(){
+				return new Dimension(scrollPane.getWidth(), 100);
+			}
+		};
 		pathLabel = new JLabel(path);
 		pathLabel.setFont(FONT);
 		controlPan.add(pathLabel);
@@ -272,7 +281,11 @@ private int threads = 2;
 		controlPan.add(threadSpin);
 		gui.add(controlPan);
 		
-		JPanel buttonPan = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 2));
+		JPanel buttonPan = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 2)){
+			public Dimension getMaximumSize(){
+				return new Dimension(scrollPane.getWidth(), 100);
+			}
+		};
 		JButton run = new JButton("Run");
 		run.setFont(FONT);
 		run.addActionListener(listen);
@@ -287,16 +300,6 @@ private int threads = 2;
 		gui.setLocationRelativeTo(null);
 		gui.setVisible(true);
 		
-		final Timer timer = new Timer();
-		TimerTask task = new TimerTask(){
-			int n = 0;
-			public void run(){
-				System.out.println("text");
-				n++;
-				if(n>50) timer.cancel();
-			}
-		};
-		timer.scheduleAtFixedRate(task, 100L, 100L);
 	}
 	
 }

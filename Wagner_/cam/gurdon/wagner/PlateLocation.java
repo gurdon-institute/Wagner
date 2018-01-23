@@ -14,7 +14,7 @@ import ij.ImagePlus;
 import ij.ImageStack;
 
 class PlateLocation implements Runnable{
-	private int row, column, field;
+	public int row, column, field;
 	private String path, locationString;
 	private List<OperaTiff> images;
 	private long memory;

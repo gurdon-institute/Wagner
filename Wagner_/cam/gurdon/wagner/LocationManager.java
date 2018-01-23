@@ -10,6 +10,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.swing.JOptionPane;
+
 public class LocationManager {
 private ExecutorService executor;
 private List<PlateLocation> locations;
@@ -85,6 +87,11 @@ private int nThreads;
 		try {
 			executor.awaitTermination(7L, TimeUnit.DAYS);
 			System.out.println( "\nWagner finished "+locations.size()+" locations in "+path+"\n" );
+			
+			if(JOptionPane.showConfirmDialog(null, "Stitch?", "Stitch stacks?", JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION){
+				new Stitcher(locations, path);
+			}
+			
 		} catch (InterruptedException ie) {
 			System.out.println(ie.toString());
 		}
