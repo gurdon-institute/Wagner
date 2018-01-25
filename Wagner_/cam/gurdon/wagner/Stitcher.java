@@ -99,8 +99,8 @@ public class Stitcher {
 					int f = arrange[y][x];
 					if(f==0) continue;
 					tiles[y][x] = IJ.openImage( stackPath+well.getTitle(f) );
-					totalW = Math.max(totalW, tiles[y][x].getWidth()*(x+1));
-					totalH = Math.max(totalH, tiles[y][x].getHeight()*(y+1));
+					totalW = (int) Math.max(totalW, tiles[y][x].getWidth()*(x+1)*olF);
+					totalH = (int) Math.max(totalH, tiles[y][x].getHeight()*(y+1)*olF);
 					W = Math.max(W, tiles[y][x].getWidth());
 					H = Math.max(H, tiles[y][x].getHeight());
 					C = Math.max(C, tiles[y][x].getNChannels());
@@ -108,11 +108,17 @@ public class Stitcher {
 					T = Math.max(T, tiles[y][x].getNFrames());
 				}
 			}
-
-			ImageStack stack = new ImageStack((int)(totalW*olF), (int)(totalH*olF));
+			
+			//sort out overlap lengths for 1 or >1 tiles
+			if(arrange.length>1) totalH += (totalH-(totalH*olF))/2d;
+			else totalH += (totalH-(totalH*olF));
+			if(arrange[0].length>1) totalW += (totalW-(totalW*olF))/2d;
+			else totalW += (totalW-(totalW*olF));
+			
+			ImageStack stack = new ImageStack((int)(totalW), (int)(totalH));
 			
 			for(int z=0;z<Z;z++){
-				ImageProcessor ip = new ShortProcessor((int)(totalW*olF), (int)(totalH*olF));
+				ImageProcessor ip = new ShortProcessor((int)(totalW), (int)(totalH));
 				for (int y = 0; y < tiles.length; y++) {
 					for (int x = 0; x < tiles[y].length; x++) {
 						ImageProcessor tp = null;
@@ -135,7 +141,6 @@ public class Stitcher {
 			Z /= C;
 			Z /= T;
 			ImagePlus mosaic = new ImagePlus("mosaic", stack);
-			//System.out.println(mosaic.getNSlices()+" == "+C+"*"+Z+"*"+T);
 			if(C>1||Z>1||T>1){
 				mosaic = HyperStackConverter.toHyperStack(mosaic, C, Z, T, "xyczt", "composite");
 			}
@@ -145,76 +150,5 @@ mosaic.show();	//TEST
 			//mosaic.close();
 		}
 	}
-	
-/*	public void stitchA(int[][] arrange) {
-		for (int y = 0; y < arrange.length; y++) {
-			System.out.println(Arrays.toString(arrange[y]));
-		}
-		
-//////////////////TEST
-		
-		if(true){
-			File file = new File(stackPath+wells.get(0)+"row-1 column-2 field-1.tiff");
-			System.out.println(file.getAbsolutePath()+" "+file.exists());
-			return;
-		}
-		
-		//ImagePlus imp1 = IJ.openImage( stackPath+wells.get(0).getTitle(0) ); //FIXME: images not found
-		//ImagePlus imp2 = IJ.openImage( stackPath+wells.get(0).getTitle(1) );
-		
-		ImagePlus imp1 = IJ.openImage( stackPath+"row-1 column-2 field-1.tiff" );
-		ImagePlus imp2 = IJ.openImage( stackPath+"row-1 column-2 field-2.tiff" );
-		
-		StitchingParameters params = new StitchingParameters();
-		params.cpuMemChoice = 1;
-		params.dimensionality = 3;
-		params.xOffset = imp1.getWidth(); //TODO: offsets
-		params.yOffset = 0;
-		
-		Stitching_Pairwise.performPairWiseStitching(imp1, imp2, params);
-///////////////////////
-		
-		
-		StitchingParameters params = new StitchingParameters();
-		params.cpuMemChoice = 1;
-		params.dimensionality = 3;
-		params.fusionMethod = 0;	//0=blending pixel fusion, 1=average pixel fusion, 2=median pixel fusion, 3=max pixel fusion, 4=min pixel fusion, 5=overlap fusion
-		params.computeOverlap = false;
-		params.displayFusion = false;
-		
-		int W=0, H=0;
-		for(int w=0;w<wells.size();w++){
-			Well well = wells.get(w);
-			ImagePlus[] rows = new ImagePlus[arrange.length];
-			for (int y = 0; y < arrange.length; y++) {
-				int f = arrange[y][0];
-				if(f==0) continue;
-				rows[y] = IJ.openImage( stackPath+well.getTitle(f) );
-				W = rows[y].getWidth();
-				H = 0;
-				for (int x = 1; x < arrange[y].length; x++) {
-					String name = x+","+y+"_"+f;
-					int addF = arrange[y][x];
-					if(addF==0) continue;
-					ImagePlus addImp = IJ.openImage( stackPath+well.getTitle(addF) );
-					params.xOffset = W*x;
-					params.yOffset = 0;
-					params.fusedName = name;
-					Stitching_Pairwise.performPairWiseStitching(rows[y], addImp, params);
-					rows[y] = WindowManager.getImage(name);
-				}
-			}
-			ImagePlus full = rows[0];
-			for (int y = 1; y < arrange.length; y++) {
-				params.xOffset = 0;
-				params.yOffset = H*y;
-				params.fusedName = "full";
-				Stitching_Pairwise.performPairWiseStitching(full, rows[y], params);
-				full = WindowManager.getImage("full");
-			}
-			full.show();
-		}
-		
-	}*/
 	
 }

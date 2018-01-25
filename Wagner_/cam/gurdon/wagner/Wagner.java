@@ -90,12 +90,6 @@ private int threads = 2;
 
 	public static void main(String[] args){
 		try{
-			
-			/*if(true){
-				final Arranger arranger = new Arranger(12, new Stitcher());
-				return;
-			}*/
-			
 			String path = "";
 			int nThreads = 0;
 			if(args.length == 0){
