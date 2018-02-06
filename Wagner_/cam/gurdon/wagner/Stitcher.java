@@ -35,6 +35,9 @@ public class Stitcher {
 				maxf = Math.max(maxf, field);
 			}
 		}
+		String getRowColumn(){
+			return "row-"+row+" column-"+col;
+		}
 		String getTitle(int field){
 			return "row-"+row+" column-"+col+" field-"+field+".tiff";
 		}
@@ -69,7 +72,7 @@ public class Stitcher {
 					}
 				}
 			}
-			Arranger arranger = new Arranger(wells.get(0).maxf, this);
+			new Arranger(wells.get(0).maxf, this);	//calls back to stitch(int[][] arrange, double overlapPercent) when arrangement is oked
 			
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
@@ -105,6 +108,7 @@ public class Stitcher {
 					H = Math.max(H, tiles[y][x].getHeight());
 					C = Math.max(C, tiles[y][x].getNChannels());
 					Z = Math.max(Z, tiles[y][x].getNSlices());
+					//System.out.println("C = "+C+" Z = "+Z);
 					T = Math.max(T, tiles[y][x].getNFrames());
 				}
 			}
@@ -116,38 +120,40 @@ public class Stitcher {
 			else totalW += (totalW-(totalW*olF));
 			
 			ImageStack stack = new ImageStack((int)(totalW), (int)(totalH));
-			
-			for(int z=0;z<Z;z++){
-				ImageProcessor ip = new ShortProcessor((int)(totalW), (int)(totalH));
-				for (int y = 0; y < tiles.length; y++) {
-					for (int x = 0; x < tiles[y].length; x++) {
-						ImageProcessor tp = null;
-						if(tiles[y][x]==null) continue;
-						if(C>1||Z>1||T>1){
-							tp = tiles[y][x].getImageStack().getProcessor(z+1);
+			for (int t = 0; t < T; t++) {
+				for (int z = 0; z < Z; z++) {
+					for (int c = 0; c < C; c++) {
+						ImageProcessor ip = new ShortProcessor((int) (totalW), (int) (totalH));
+						for (int y = 0; y < tiles.length; y++) {
+							for (int x = 0; x < tiles[y].length; x++) {
+
+								ImageProcessor tp = null;
+								if (tiles[y][x] == null)
+									continue;
+
+								tiles[y][x].setPosition(c+1, z+1, t+1);
+								tp = tiles[y][x].getProcessor();
+
+								int xp = (int) (x * tiles[y][x].getWidth() * olF);
+								int yp = (int) (y * tiles[y][x].getHeight() * olF);
+								// ip.copyBits(tp, xp, yp, Blitter.AVERAGE);
+								ip.copyBits(tp, xp, yp, Blitter.MAX);
+							}
 						}
-						else{
-							tp = tiles[y][x].getProcessor();
-						}
-						int xp = (int)( x*tiles[y][x].getWidth()*olF );
-						int yp = (int)( y*tiles[y][x].getHeight()*olF );
-						//ip.copyBits(tp, xp, yp, Blitter.AVERAGE);
-						ip.copyBits(tp, xp, yp, Blitter.MAX);
+						stack.addSlice("slice " + (z + 1), ip);
 					}
 				}
-				stack.addSlice("slice "+(z+1), ip);
 			}
-			
-			Z /= C;
-			Z /= T;
-			ImagePlus mosaic = new ImagePlus("mosaic", stack);
+
+			String mosaicName = well.getRowColumn()+" mosaic";
+			ImagePlus mosaic = new ImagePlus(mosaicName, stack);
 			if(C>1||Z>1||T>1){
 				mosaic = HyperStackConverter.toHyperStack(mosaic, C, Z, T, "xyczt", "composite");
 			}
-			IJ.saveAs(mosaic, "TIFF", stackPath+"mosaic");
+			IJ.saveAs(mosaic, "TIFF", stackPath+mosaicName);
 			System.out.println("Saved stitched mosaic in "+stackPath);
-mosaic.show();	//TEST
-			//mosaic.close();
+//mosaic.show();	//TEST
+			mosaic.close();
 		}
 	}
 	

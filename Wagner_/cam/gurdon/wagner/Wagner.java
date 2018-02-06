@@ -6,8 +6,6 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -19,6 +17,7 @@ import java.util.Arrays;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -87,6 +86,8 @@ private static final String prefPath = System.getProperty("user.home")+File.sepa
 private String path = System.getProperty("user.home");
 private int threads = 2;
 //~~~~~~~~~~
+
+private JCheckBox stitchOnlyTick;
 
 	public static void main(String[] args){
 		try{
@@ -205,10 +206,18 @@ private int threads = 2;
 						threads = (int)threadSpin.getValue();
 						SwingWorker<Void, String> worker = new SwingWorker<Void, String>(){
 							public Void doInBackground(){
-								LocationManager manager = new LocationManager(path, threads);
-								manager.execute();
-								savePrefs();
-								return null;
+								if(stitchOnlyTick.isSelected()){
+									LocationManager manager = new LocationManager(path, threads);
+									new Stitcher(manager.getLocations(), path);
+									savePrefs();
+									return null;
+								}
+								else{
+									LocationManager manager = new LocationManager(path, threads);
+									manager.execute();
+									savePrefs();
+									return null;
+								}
 							}
 						};
 						worker.execute();
@@ -254,6 +263,8 @@ private int threads = 2;
 		gui.add(scrollPane);
 		
 		JPanel controlPan = new JPanel(){
+			private static final long serialVersionUID = 2072448775228066850L;
+
 			public Dimension getMaximumSize(){
 				return new Dimension(scrollPane.getWidth(), 100);
 			}
@@ -276,10 +287,18 @@ private int threads = 2;
 		gui.add(controlPan);
 		
 		JPanel buttonPan = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 2)){
+			private static final long serialVersionUID = -7775312541609181065L;
+
 			public Dimension getMaximumSize(){
 				return new Dimension(scrollPane.getWidth(), 100);
 			}
 		};
+		
+		stitchOnlyTick = new JCheckBox("Stitch only? (requires constructed stacks)");
+		stitchOnlyTick.setFont(FONT);
+		buttonPan.add(stitchOnlyTick);
+		buttonPan.add(Box.createHorizontalStrut(10));
+		
 		JButton run = new JButton("Run");
 		run.setFont(FONT);
 		run.addActionListener(listen);

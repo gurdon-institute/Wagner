@@ -16,7 +16,7 @@ public class LocationManager {
 private ExecutorService executor;
 private List<PlateLocation> locations;
 private String path;
-private int nThreads;
+private int count, nThreads;
 	
 	public LocationManager(String path, int n) {
 		try{
@@ -24,7 +24,7 @@ private int nThreads;
 			this.nThreads = n;
 			locations = new ArrayList<PlateLocation>();
 			final DirectoryStream<Path> dirstream = Files.newDirectoryStream(Paths.get(path));
-			int count = 0;
+			count = 0;
 			for (final Path entry: dirstream){
 				String name = entry.getFileName().toString();
 				if(name.matches( "r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff" )){
@@ -33,8 +33,7 @@ private int nThreads;
 				}
 			}
 			dirstream.close();
-			System.out.println("Constructing images for "+path);
-			System.out.println(count+" files, "+locations.size()+" plate locations using "+nThreads+" threads.");
+			
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 	
@@ -52,6 +51,10 @@ private int nThreads;
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 	
+	public List<PlateLocation> getLocations(){
+		return locations;
+	}
+	
 	public PlateLocation getLocation( String str ){
 		for(PlateLocation loc : locations){
 			if(loc.matches(str)){
@@ -62,7 +65,8 @@ private int nThreads;
 	}
 
 	public void execute(){
-		
+		System.out.println("Constructing images for "+path);
+		System.out.println(count+" files, "+locations.size()+" plate locations using "+nThreads+" threads.");
 		if(nThreads>locations.size()){	//don't allocate more threads than locations
 			nThreads = locations.size();
 		}
