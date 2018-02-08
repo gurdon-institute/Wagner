@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.SwingUtilities;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -151,7 +153,11 @@ public class Stitcher {
 				mosaic = HyperStackConverter.toHyperStack(mosaic, C, Z, T, "xyczt", "composite");
 			}
 			IJ.saveAs(mosaic, "TIFF", stackPath+mosaicName);
-			System.out.println("Saved stitched mosaic in "+stackPath);
+			SwingUtilities.invokeLater(new Runnable(){
+				public void run(){
+					System.out.println("Saved stitched mosaic in "+stackPath);
+				}
+			});
 //mosaic.show();	//TEST
 			mosaic.close();
 		}
