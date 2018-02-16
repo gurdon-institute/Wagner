@@ -1,10 +1,11 @@
 package cam.gurdon.wagner;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.swing.SwingUtilities;
+import javax.swing.JOptionPane;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -16,6 +17,24 @@ import ij.process.ShortProcessor;
 
 public class Stitcher {
 	private static final String foo = System.getProperty("file.separator");
+	
+	static final float[] V_KERNEL = {
+			0f, 0f, 0f, 0f, 0f,
+			0f, 0f, 0f, 0f, 0f,
+			0.2f, 0.2f, 0.2f, 0.2f, 0.2f,
+			0f, 0f, 0f, 0f, 0f,
+			0f, 0f, 0f, 0f, 0f
+	};
+	
+	static final float[] H_KERNEL = {
+			0f, 0f, 0.2f, 0f, 0f,
+			0f, 0f, 0.2f, 0f, 0f,
+			0f, 0f, 0.2f, 0f, 0f,
+			0f, 0f, 0.2f, 0f, 0f,
+			0f, 0f, 0.2f, 0f, 0f
+	};
+	
+	
 	ArrayList<Well> wells;
 	int[][] arrange;
 	String stackPath;
@@ -67,6 +86,11 @@ public class Stitcher {
 					wells.add(new Well(rc[0], rc[1]));
 				}
 			}
+			if(wells.size()==0){
+				JOptionPane.showMessageDialog(null, "No stacks found in "+stackPath, "No stacks found", JOptionPane.ERROR_MESSAGE);
+				System.out.println(locations);
+				return;
+			}
 			for(Well well:wells){
 				for(PlateLocation loc:locations){
 					if(loc.row==well.row&&loc.column==well.col){
@@ -74,8 +98,10 @@ public class Stitcher {
 					}
 				}
 			}
-			new Arranger(wells.get(0).maxf, this);	//calls back to stitch(int[][] arrange, double overlapPercent) when arrangement is oked
+			System.out.println("Got "+wells.size()+" wells with "+locations.size()+" locations for stitching");
 			
+			new Arranger(wells.get(0).maxf, this);	//calls back to stitch(int[][] arrange, double overlapPercent) when arrangement is oked
+
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
 	
@@ -86,8 +112,33 @@ public class Stitcher {
 
 	public void stitch(int[][] arrange, double overlapPercent) {
 		
-		double olF = (100d-overlapPercent)/100d;
+		//remove empty rows and columns
+		int y0 = Integer.MAX_VALUE;
+		int y1 = Integer.MIN_VALUE;
+		int x0 = Integer.MAX_VALUE;
+		int x1 = Integer.MIN_VALUE;
+		for (int y = 0; y < arrange.length; y++) {
+			for (int x = 0; x < arrange[y].length; x++) {
+				if(arrange[y][x]>0){
+					y0 = Math.min(y0, y);
+					y1 = Math.max(y1, y);
+					x0 = Math.min(x0, x);
+					x1 = Math.max(x1, x);
+				}
+			}
+		}
+		int yn = y1-y0+1;
+		int xn = x1-x0+1;
+		int[][] keep = new int[yn][xn];
+		for(int y=0;y<yn;y++){
+			for(int x=0;x<xn;x++){
+				keep[y][x] = arrange[y0+y][x0+x];
+			}
+		}
+		arrange = keep;
+		keep = null;
 		
+		double olF = (100d-overlapPercent)/100d;
 		for(int w=0;w<wells.size();w++){
 			Well well = wells.get(w);
 			if(well.getNFields()<2) continue;
@@ -152,13 +203,13 @@ public class Stitcher {
 			if(C>1||Z>1||T>1){
 				mosaic = HyperStackConverter.toHyperStack(mosaic, C, Z, T, "xyczt", "composite");
 			}
+			
+			File mosFile = new File(stackPath+mosaicName+".tif");
+			if(mosFile.exists()){
+				mosFile.delete();
+			}
 			IJ.saveAs(mosaic, "TIFF", stackPath+mosaicName);
-			SwingUtilities.invokeLater(new Runnable(){
-				public void run(){
-					System.out.println("Saved stitched mosaic in "+stackPath);
-				}
-			});
-//mosaic.show();	//TEST
+			System.out.println("Saved stitched mosaic: "+stackPath+mosaicName+".tif");
 			mosaic.close();
 		}
 	}
