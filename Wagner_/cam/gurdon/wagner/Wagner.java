@@ -12,7 +12,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -74,6 +80,7 @@ public class Wagner{
 private static final String USAGE = "Wagner - by Richard Butler, Gurdon Institute Imaging Facility\n"
 									+"constructs stacks from TIFFs with names matching r[0-9]{2}c[0-9]{2}f[0-9]{2}p[0-9]{2}-ch[0-9]sk[0-9]?[0-9]fk[0-9]fl[0-9].tiff\n"
 		 							+"command line usage: Wagner directory_path(string, required) thread_count(int, optional)\n";
+private static final String foo = System.getProperty("file.separator");
 
 //~~~~~GUI mode things~~~~~
 private JFrame gui;
@@ -131,7 +138,6 @@ private JCheckBox stitchOnlyTick;
 			text.setEditable(false);
 			text.setLineWrap(true);
 			text.setText(USAGE+"\n\n");
-					//+String.format("%.1f",Runtime.getRuntime().freeMemory()/1000000d)+" MB free JVM memory - increase using the -Xmx argument\n");
 			sb = new StringBuilder();
 		}
 		
@@ -147,8 +153,7 @@ private JCheckBox stitchOnlyTick;
 	                @Override
 	                public void run() {
 	                    text.append(str);
-	                    JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
-	            		scrollBar.setValue( scrollBar.getMaximum() );
+	                    text.setCaretPosition(text.getDocument().getLength());
 	                }
 	            });
 	            sb.setLength(0);
@@ -207,9 +212,33 @@ private JCheckBox stitchOnlyTick;
 						SwingWorker<Void, String> worker = new SwingWorker<Void, String>(){
 							public Void doInBackground(){
 								if(stitchOnlyTick.isSelected()){
-									LocationManager manager = new LocationManager(path, threads);
-									new Stitcher(manager.getLocations(), path);
-									savePrefs();
+									try{
+										List<PlateLocation> locations = new ArrayList<PlateLocation>();
+	
+										//make Stitcher with locations from stacks directory
+										final DirectoryStream<Path> dirstream = Files.newDirectoryStream(Paths.get(path+foo+"stacks"+foo));
+										for (final Path entry: dirstream){
+											String name = entry.getFileName().toString();			
+											int rowi = name.indexOf("row-")+4;
+											int columni = name.indexOf("column-")+7;
+											int fieldi = name.indexOf("field-")+6;
+											int exti = name.indexOf(".tiff");
+											if(rowi<0||columni<0||fieldi<0||exti<0){	//skip files with names not matching the stack pattern
+												continue;
+											}
+											String row = name.substring(rowi,columni-8);
+											String column = name.substring(columni, fieldi-7);
+											String field = name.substring(fieldi, exti);
+											int r = Integer.valueOf(row);
+											int c = Integer.valueOf(column);
+											int f = Integer.valueOf(field);
+											PlateLocation loc = new PlateLocation(r,c,f);
+											locations.add(loc);
+										}
+										new Stitcher(locations, path);
+										
+										savePrefs();
+									}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 									return null;
 								}
 								else{

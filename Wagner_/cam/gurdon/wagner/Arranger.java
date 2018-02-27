@@ -32,6 +32,7 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingWorker;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -419,8 +420,15 @@ public class Arranger extends JFrame implements ActionListener{
 			}
 			overlapPercent = (double) overlapSpinner.getValue();
 			Prefs.set("Wagner.overlapPercent", overlapPercent);
-			stitcher.stitch(arrange, overlapPercent);
-
+			setVisible(false);
+			final int[][] arrangef = arrange;
+			SwingWorker<Void, String> worker = new SwingWorker<Void, String>(){
+				public Void doInBackground(){
+					stitcher.stitch(arrangef, overlapPercent);
+					return null;
+				}
+			};
+			worker.execute();
 			dispose();
 			return;
 		}

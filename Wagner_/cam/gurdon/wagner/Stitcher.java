@@ -104,11 +104,6 @@ public class Stitcher {
 
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
-	
-	//default constuctor for testing
-	public Stitcher() {
-		
-	}
 
 	public void stitch(int[][] arrange, double overlapPercent) {
 		
@@ -137,10 +132,30 @@ public class Stitcher {
 		}
 		arrange = keep;
 		keep = null;
+	
+		int skip = 0;
 		
 		double olF = (100d-overlapPercent)/100d;
 		for(int w=0;w<wells.size();w++){
+			Runtime rt = Runtime.getRuntime();
+			System.out.println( "Memory use : "+ (rt.freeMemory()/ 1000000) + " / " + (rt.totalMemory()/ 1000000) + " MB");
 			Well well = wells.get(w);
+			String mosaicName = well.getRowColumn()+" mosaic";
+			File mosFile = new File(stackPath+mosaicName+".tif");
+			if(mosFile.exists()){
+				if(skip==1){
+					continue;
+				}
+				else if(skip==0){ //unset
+					if(JOptionPane.showConfirmDialog(null, mosFile.getAbsolutePath()+" already exists.\nSkip stitching for wells with existing mosaics?", "Skip?", JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION){
+						skip = 1;
+						continue;
+					}
+					else{
+						skip = -1;
+					}
+				}
+			}
 			if(well.getNFields()<2) continue;
 			ImagePlus[][] tiles = new ImagePlus[arrange.length][arrange[0].length];
 			int totalW = 0;
@@ -150,6 +165,8 @@ public class Stitcher {
 			int C = 0;
 			int Z = 0;
 			int T = 0;
+			int prog = 0; 
+			int total = arrange.length*arrange[0].length;
 			for (int y = 0; y < arrange.length; y++) {
 				for (int x = 0; x < arrange[y].length; x++) {
 					int f = arrange[y][x];
@@ -163,8 +180,11 @@ public class Stitcher {
 					Z = Math.max(Z, tiles[y][x].getNSlices());
 					//System.out.println("C = "+C+" Z = "+Z);
 					T = Math.max(T, tiles[y][x].getNFrames());
+					prog++;
+					System.out.println( "Well "+w+" tiles : "+prog+"/"+total );
 				}
 			}
+			System.out.println( "Well "+w+" : stitching mosaic..." );
 			
 			//sort out overlap lengths for 1 or >1 tiles
 			if(arrange.length>1) totalH += (totalH-(totalH*olF))/2d;
@@ -198,20 +218,37 @@ public class Stitcher {
 				}
 			}
 
-			String mosaicName = well.getRowColumn()+" mosaic";
+			
 			ImagePlus mosaic = new ImagePlus(mosaicName, stack);
 			if(C>1||Z>1||T>1){
 				mosaic = HyperStackConverter.toHyperStack(mosaic, C, Z, T, "xyczt", "composite");
 			}
 			
-			File mosFile = new File(stackPath+mosaicName+".tif");
-			if(mosFile.exists()){
+			if(mosFile.exists()){	//the well wasn't skipped, so delete the existing mosiac
 				mosFile.delete();
 			}
 			IJ.saveAs(mosaic, "TIFF", stackPath+mosaicName);
-			System.out.println("Saved stitched mosaic: "+stackPath+mosaicName+".tif");
+			System.out.println("Saved stitched mosaic: "+stackPath+mosaicName+".tif\n");
 			mosaic.close();
+			
+/////////////////////// memory "optimisation"
+			well = null;
+			mosFile = null;
+			mosaic.flush();
+			mosaic = null;
+			for (int y = 0; y < tiles.length; y++) {
+				for (int x = 0; x < tiles[y].length; x++) {
+					tiles[y][x].close();
+					tiles[y][x].flush();
+					tiles[y][x] = null;
+				}
+			}
+			tiles = null;
+			stack = null;
+//////////////////////
+		
 		}
+		System.out.println("Stitching complete for "+wells.size()+" wells.\n");
 	}
 	
 }

@@ -30,6 +30,13 @@ class PlateLocation implements Runnable{
 		this.memory = 0L;
 	}
 	
+	//constructor for use in stack stitching organisation
+	public PlateLocation(int row, int column, int field) {
+		this.row = row;
+		this.column = column;
+		this.field = field;
+	}
+	
 	public void addImage(String filename){
 		if(images.indexOf(filename)==-1){	//if the image isn't already in the list
 			images.add( new OperaTiff(filename) );
