@@ -28,7 +28,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
@@ -87,11 +86,13 @@ private JFrame gui;
 private JScrollPane scrollPane;
 private JLabel pathLabel;
 private JSpinner threadSpin;
+private JCheckBox overwriteTick;
 private static final Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
 private static final Font FONT = new Font(Font.SANS_SERIF, Font.PLAIN, screen.height/100);
 private static final String prefPath = System.getProperty("user.home")+File.separator+"Wagner.cfg";
 private String path = System.getProperty("user.home");
 private int threads = 2;
+private boolean overwrite = false;
 //~~~~~~~~~~
 
 private JCheckBox stitchOnlyTick;
@@ -123,7 +124,7 @@ private JCheckBox stitchOnlyTick;
 				return;
 			}
 	
-			LocationManager manager = new LocationManager(path, nThreads);
+			LocationManager manager = new LocationManager(path, nThreads, false);
 			manager.execute();
 		}catch(Exception e){ System.out.print( e.toString()+"\n"+Arrays.toString(e.getStackTrace()).replace(",","\n"));}
 	}
@@ -208,6 +209,7 @@ private JCheckBox stitchOnlyTick;
 				try{
 					String event = ae.getActionCommand();
 					if(event.equals("Run")){
+						overwrite = overwriteTick.isSelected();
 						threads = (int)threadSpin.getValue();
 						SwingWorker<Void, String> worker = new SwingWorker<Void, String>(){
 							public Void doInBackground(){
@@ -242,7 +244,7 @@ private JCheckBox stitchOnlyTick;
 									return null;
 								}
 								else{
-									LocationManager manager = new LocationManager(path, threads);
+									LocationManager manager = new LocationManager(path, threads, overwrite);
 									manager.execute();
 									savePrefs();
 									return null;
@@ -322,6 +324,10 @@ private JCheckBox stitchOnlyTick;
 				return new Dimension(scrollPane.getWidth(), 100);
 			}
 		};
+		
+		overwriteTick = new JCheckBox("Overwrite existing stacks?");
+		overwriteTick.setFont(FONT);
+		buttonPan.add(overwriteTick);
 		
 		stitchOnlyTick = new JCheckBox("Stitch only? (requires constructed stacks)");
 		stitchOnlyTick.setFont(FONT);

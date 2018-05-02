@@ -16,12 +16,14 @@ public class LocationManager {
 private ExecutorService executor;
 private List<PlateLocation> locations;
 private String path;
+private boolean overwrite;
 private int count, nThreads;
 	
-	public LocationManager(String path, int n) {
+	public LocationManager(String path, int n, boolean overwrite) {
 		try{
 			this.path = path;
 			this.nThreads = n;
+			this.overwrite = overwrite;
 			locations = new ArrayList<PlateLocation>();
 			final DirectoryStream<Path> dirstream = Files.newDirectoryStream(Paths.get(path));
 			count = 0;
@@ -41,7 +43,7 @@ private int count, nThreads;
 		try{
 			PlateLocation loc = getLocation( name );
 			if( loc == null ){
-				loc = new PlateLocation(path, name);
+				loc = new PlateLocation(path, name, overwrite);
 				loc.addImage( name );
 				locations.add( loc );
 			}
@@ -69,6 +71,10 @@ private int count, nThreads;
 		System.out.println(count+" files, "+locations.size()+" plate locations using "+nThreads+" threads.");
 		if(nThreads>locations.size()){	//don't allocate more threads than locations
 			nThreads = locations.size();
+		}
+		if(locations.size()==0) {
+			System.out.println("No locations for "+path);
+			return;
 		}
 		long available = Runtime.getRuntime().maxMemory();
 		long total = 0L;

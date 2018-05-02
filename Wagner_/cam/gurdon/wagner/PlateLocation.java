@@ -18,16 +18,18 @@ class PlateLocation implements Runnable{
 	private String path, locationString;
 	private List<OperaTiff> images;
 	private long memory;
+	private boolean overwrite;
 	private static final String foo = System.getProperty("file.separator");
 	
 	
-	public PlateLocation(String path, String loc){
+	public PlateLocation(String path, String loc, boolean overwrite){
 		this.path = path;
 		this.row = OperaParser.getValue(OperaParser.Dimension.ROW, loc);
 		this.column = OperaParser.getValue(OperaParser.Dimension.COLUMN, loc);
 		this.field = OperaParser.getValue(OperaParser.Dimension.FIELD, loc);
 		this.images = new ArrayList<OperaTiff>();
 		this.memory = 0L;
+		this.overwrite = overwrite;
 	}
 	
 	//constructor for use in stack stitching organisation
@@ -88,6 +90,13 @@ class PlateLocation implements Runnable{
 		File saveDir = new File(path+foo+"stacks");
 		if(!saveDir.isDirectory()){
 			saveDir.mkdir();
+		}
+		
+		String savePath = path+foo+"stacks"+foo+toString()+".tiff";
+		if(!overwrite&&new File(savePath).exists()){
+			System.out.println(savePath+" already exists");
+			flush();
+			return;
 		}
 		
 		if(images==null||images.size()==0){
